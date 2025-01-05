@@ -1,0 +1,16 @@
+{
+  "name": "lecture-codes",
+  "version": "1.0.0",
+  "main": "01_bit.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "base-x": "^5.0.0",
+    "bs58": "^6.0.0"
+  }
+}
