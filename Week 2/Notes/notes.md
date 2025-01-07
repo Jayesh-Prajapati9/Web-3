@@ -2,11 +2,9 @@
 
 ## Information
 
--
 - **Class Slides**: [Public Key Cryptography](https://projects.100xdevs.com/tracks/public-private-keys/Public-Key-Cryptography-1)
 
 - **Assignment**: Creating a web based wallet
-
 
 ## Authentication Methods
 
@@ -258,14 +256,164 @@ Uses a pair of keys – a public key and a private key – for encryption and de
 #### Implementation Options
 
 - Using @noble/ed25519
-- Using @solanaweb3.js
+- Below code shows the creation of public-private key using Noble/ed25519 algorithm
+
+```typescript
+import * as ed from "@noble/ed25519";
+
+async function main() {
+  // Generate a secure random private key
+  const privKey = ed.utils.randomPrivateKey();
+
+  // Convert the message "hello world" to a Uint8Array
+  const message = new TextEncoder().encode("hello world");
+
+  // Generate the public key from the private key
+  const pubKey = await ed.getPublicKeyAsync(privKey);
+
+  // Sign the message
+  const signature = await ed.signAsync(message, privKey);
+
+  // Verify the signature
+  const isValid = await ed.verifyAsync(signature, message, pubKey);
+
+  // Output the result
+  console.log(isValid); // Should print `true` if the signature is valid
+}
+
+main();
+```
+
+- Using @solana/web3.js
+- Below code shows the creation of public-private key using Solana/Web3
+- this is specially used when you are creating public-private key for the Solana Blockchain
+
+```javascript
+import { Keypair } from "@solana/web3.js";
+import nacl from "tweetnacl";
+
+// Generate a new keypair
+const keypair = Keypair.generate();
+
+// Extract the public and private keys
+const publicKey = keypair.publicKey.toString();
+const secretKey = keypair.secretKey;
+
+// Display the keys
+console.log("Public Key:", publicKey);
+console.log("Private Key (Secret Key):", secretKey);
+
+// Convert the message "hello world" to a Uint8Array
+const message = new TextEncoder().encode("hello world");
+
+const signature = nacl.sign.detached(message, secretKey);
+const result = nacl.sign.detached.verify(
+  message,
+  signature,
+  keypair.publicKey.toBytes()
+);
+
+console.log(result);
+```
 
 ### ECDSA (Elliptic Curve Digital Signature Algorithm) - secp256k1
 
 #### Implementation Options
 
 - Using @noble/secp256k1
+- Below code shows the creation of public-private key using Noble/secp256k1
+
+```javascript
+import * as secp from "@noble/secp256k1";
+
+async function main() {
+  const privKey = secp.utils.randomPrivateKey(); // Secure random private key
+  // sha256 of 'hello world'
+  const msgHash =
+    "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9";
+  const pubKey = secp.getPublicKey(privKey);
+  const signature = await secp.signAsync(msgHash, privKey); // Sync methods below
+  const isValid = secp.verify(signature, msgHash, pubKey);
+  console.log(isValid);
+}
+
+main();
+```
+
 - Using ethers
+- Below code shows the creation of public-private key using Ethers, which was created by Ethereum for it's Blockchain.
+
+```javascript
+import { ethers } from "ethers";
+
+// Generate a random wallet
+const wallet = ethers.Wallet.createRandom();
+
+// Extract the public and private keys
+const publicKey = wallet.address;
+const privateKey = wallet.privateKey;
+
+console.log("Public Key (Address):", publicKey);
+console.log("Private Key:", privateKey);
+
+// Message to sign
+const message = "hello world";
+
+// Sign the message using the wallet's private key
+const signature = await wallet.signMessage(message);
+console.log("Signature:", signature);
+
+// Verify the signature
+const recoveredAddress = ethers.verifyMessage(message, signature);
+
+console.log("Recovered Address:", recoveredAddress);
+console.log("Signature is valid:", recoveredAddress === publicKey);
+```
+
+## How Transactions Work on the Blockchain
+
+### Overview of Transaction Flow
+
+[For Reference](https://andersbrownworth.com/blockchain/img/transaction-flow.png)
+
+### User Side Steps
+
+1. **Key Creation**
+
+   - User creates a public/private keypair
+   - Public key serves as their blockchain address
+   - Private key is kept secure for signing transactions
+
+2. **Transaction Creation**
+
+   - User initiates a transaction (e.g., "send Rs 50 to Alice")
+   - Transaction includes:
+     - Recipient's address
+     - Amount to send
+     - Blockchain-specific parameters (e.g., latestBlockHash in Solana)
+
+3. **Transaction Processing**
+   - Hash the transaction data
+   - Sign the transaction using private key
+   - Send three components to blockchain node:
+     - Raw transaction
+     - Signature
+     - Public key
+
+### Miner/Validator Side
+
+1. **Signature Verification**
+
+   - Hash the original message
+   - Verify signature using:
+     - User's public key
+     - Generated hash
+     - Provided signature
+
+2. **Transaction Validation**
+   - Check user has sufficient funds
+   - Verify other blockchain-specific requirements
+   - If valid, add transaction to the block
 
 ## Hierarchical Deterministic (HD) Wallet
 
@@ -278,11 +426,13 @@ This is cumbersome and risky, as losing any one of these keys can result in the 
 
 ### Solution - BIP-32
 
-Bitcoin Improvement Proposal 32 (BIP-32), introduced by Bitcoin Core developer Pieter Wuille in 2012, addresses this problem by standardizing the derivation of private and public keys from a single master seed.
+[Bitcoin Improvement Proposal 32 (BIP-32)](https://www.ledger.com/academy/what-is-a-bitcoin-improvement-proposal-bip), introduced by Bitcoin Core developer Pieter Wuille in 2012, addresses this problem by standardizing the derivation of private and public keys from a single master seed.
 
 BIP-32 introduced the concept of hierarchical deterministic (HD) wallets, which use a tree-like structure to manage multiple accounts easily.
 
 ### Mnemonics
+
+> **Reference**: [GitHub](https://github.com/bitcoin/bips/blob/master/bip-0039/english.txt)
 
 A mnemonic phrase, or seed phrase, is a human-readable sequence of words used to generate a cryptographic seed.
 BIP-39(Improvement to BIP-32) defines how mnemonic phrases are generated and converted into a seed.
@@ -307,6 +457,8 @@ console.log("Generated Mnemonic:", mnemonic);
 
 The seed is a binary number derived from the mnemonic phrase. This seed is used to generate the master private key.
 
+> **Reference**: [GitHub](https://github.com/coral-xyz/backpack/blob/master/packages/secure-background/src/services/svm/keyring.ts#L131)
+
 #### Example Code to Generate a Seed from a Mnemonic
 
 ```javascript
@@ -321,7 +473,7 @@ const seed = mnemonicToSeedSync(mnemonic);
 
 ### Derivation Paths
 
-![Derivation Paths](https://www.notion.so/image/https%3A%2F%2Fprod-files-secure.s3.us-west-2.amazonaws.com%2Feb4566ea-3499-40d2-868e-56036b453147%2F89f74c2f-2eb0-43d8-803f-97efb36f1d47%2Fimage.png?table=block&id=128bf35b-bbd7-40e6-8349-29d5e1ced334&cache=v2)
+[Derivation Paths](https://www.notion.so/image/https%3A%2F%2Fprod-files-secure.s3.us-west-2.amazonaws.com%2Feb4566ea-3499-40d2-868e-56036b453147%2F89f74c2f-2eb0-43d8-803f-97efb36f1d47%2Fimage.png?table=block&id=128bf35b-bbd7-40e6-8349-29d5e1ced334&cache=v2)
 
 Derivation paths specify a systematic way to derive various keys from the master seed.
 They allow users to recreate the same set of addresses and private keys from the seed across different wallets, ensuring interoperability and consistency.
@@ -405,3 +557,42 @@ Probability = 1/2048¹² ≈ 1.8 × 10⁻⁴⁰
 - Even with the most powerful computational resources, the time required would exceed the age of the universe
 - Cryptocurrencies rely on this extremely low probability to ensure wallet key security
 - It is virtually impossible to guess or brute-force someone's private key or recovery phrase
+
+## Assignments
+
+### 1. Adding support for ETH
+
+Given we just derived a few public keys in SOL, here's how to derive Ethereum public keys:
+
+```javascript
+import { ethers } from "ethers";
+import { generateMnemonic, mnemonicToSeedSync } from "bip39";
+
+const mnemonic = generateMnemonic();
+const seed = mnemonicToSeedSync(mnemonic);
+
+// Derive multiple Ethereum addresses from the same seed
+for (let i = 0; i < 4; i++) {
+  const path = `m/44'/60'/0'/0/${i}`; // Standard ETH derivation path
+  const wallet = ethers.HDNodeWallet.fromSeed(seed).derivePath(path);
+  console.log(`Address ${i}: ${wallet.address}`);
+}
+```
+
+### 2. Creating a web based wallet
+
+Create a simple web-based wallet application with the following features:
+
+#### Requirements
+
+- Allow users to generate a new mnemonic phrase
+- Support adding multiple wallet addresses (both SOL and ETH)
+- Display public keys for each derived wallet
+- Enable users to switch between different derivation paths
+
+#### Suggested Implementation Steps
+
+1. Create a UI for mnemonic generation and display
+2. Implement wallet derivation for both SOL and ETH
+3. Add functionality to store and manage multiple addresses
+4. Display public keys in a user-friendly format
