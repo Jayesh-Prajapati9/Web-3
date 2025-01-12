@@ -11,6 +11,7 @@
   "description": "",
   "dependencies": {
     "bip39": "^3.1.0",
+    "lecture-codes": "file:",
     "tweetnacl": "^1.0.3",
     "web3": "^4.16.0"
   }

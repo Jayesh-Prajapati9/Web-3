@@ -11,6 +11,7 @@
   "description": "",
   "dependencies": {
     "base-x": "^5.0.0",
-    "bs58": "^6.0.0"
+    "bs58": "^6.0.0",
+    "lecture-codes": "file:"
   }
 }
